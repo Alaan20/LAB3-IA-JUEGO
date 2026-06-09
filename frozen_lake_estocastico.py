@@ -18,9 +18,10 @@ def value_iteration(lista_estados_p, gamma_p, theta_p):
 
             valores_acciones = []
             for a in range(4):
-                prob, siguiente, recompensa, terminado = lista_estados_p[s][a][0]
-
-                valor_q = recompensa + gamma_p * V_viejo[siguiente]
+                valor_q = 0
+                for transicion in lista_estados_p[s][a]:
+                    prob, siguiente, recompensa, terminado = transicion
+                    valor_q += prob * (recompensa + gamma_p * V_viejo[siguiente])
                 valores_acciones.append(valor_q)
 
             # Guardamos el máximo valor encontrado entre las acciones
@@ -36,10 +37,15 @@ def value_iteration(lista_estados_p, gamma_p, theta_p):
             print("¡El algoritmo ha convergido!")
             politica_estados = {}
             for s in range(16):
+                if s in estados_terminales:
+                    politica_estados[s] = 0 if s == 15 else -1
+                    continue
                 valores_acciones = []
                 for a in range(4):
-                    prob, siguiente, recompensa, terminado = lista_estados_p[s][a][0]
-                    valor_p = recompensa + gamma_p * V[siguiente]
+                    valor_p = 0
+                    for transicion in lista_estados_p[s][a]:
+                        prob, siguiente, recompensa, terminado = transicion
+                        valor_p += prob * (recompensa + gamma_p * V[siguiente])
                     valores_acciones.append(valor_p)
                 max_valor = max(valores_acciones)
                 indice_mejor = valores_acciones.index(max_valor)
@@ -49,7 +55,7 @@ def value_iteration(lista_estados_p, gamma_p, theta_p):
 
 import gymnasium as gym
 
-env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=False)
+env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True)
 observation, info = env.reset()
 
 episode_over = False
@@ -58,15 +64,16 @@ gamma = 0.99
 theta = 1e-8
 lista_estados = env.unwrapped.P
 res, json_politica = value_iteration(lista_estados, gamma, theta)
-print("Matrizzzz")
+print("Matrizzzz Estocastico")
 print(np.round(res.reshape(4, 4), 4))
-print("\nPolítica Óptima")
-for i in json_politica:
-    print(i, "= ", json_politica.get(i))
+# print("\nPolítica Óptima")
+# for i in json_politica:
+#    print(i, "= ", json_politica.get(i))
 
 estado_actual = observation
 while not episode_over:
     # 0: Move left 1: Move down 2: Move right 3: Move top
+
     action = json_politica.get(estado_actual)
     estado_actual, reward, terminated, truncated, info = env.step(action)
 
