@@ -1,4 +1,5 @@
 import numpy as np
+import gymnasium as gym
 
 # Inicializar V(s) en 0
 V = np.zeros(16)
@@ -52,8 +53,6 @@ def value_iteration(lista_estados_p, gamma_p, theta_p):
                 politica_estados[s] = indice_mejor
             return V, politica_estados
 
-
-import gymnasium as gym
 
 env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True)
 observation, info = env.reset()
