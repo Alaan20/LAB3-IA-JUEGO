@@ -1,53 +1,58 @@
+import gymnasium as gym
 import numpy as np
-
-# Inicializar V(s) en 0
-V = np.zeros(16)
 
 
 # 2. Algoritmo de Value Iteration
-def value_iteration(lista_estados_p, gamma_p, theta_p):
+def value_iteration(entorno, gamma_p, theta_p):
     iteracion = 0
-    estados_terminales = {5, 7, 11, 12, 15}
+    modelo = entorno.unwrapped.P
+    num_estados = entorno.observation_space.n
+    num_acciones = entorno.action_space.n
+    V = np.zeros(num_estados)
+    # estados_terminales = {5, 7, 11, 12, 15}
+    #
     while True:
-        delta = 0
-        V_viejo = V.copy()
+        delta = 0.0
 
-        for s in range(len(lista_estados_p)):
-            if s in estados_terminales:
-                continue
+        for s in range(num_estados):
+            valor_anterior = V[s]
+            valores_q = np.zeros(num_acciones)
 
-            valores_acciones = []
-            for a in range(4):
-                prob, siguiente, recompensa, terminado = lista_estados_p[s][a][0]
-
-                valor_q = recompensa + gamma_p * V_viejo[siguiente]
-                valores_acciones.append(valor_q)
+            for a in range(num_acciones):
+                for prob, siguiente, recompensa, terminado in modelo[s][a]:
+                    valores_q[a] += prob * (recompensa + gamma_p * V[siguiente])
 
             # Guardamos el máximo valor encontrado entre las acciones
-            V[s] = max(valores_acciones)
+            V[s] = max(valores_q)
 
             # Calcular el cambio máximo para la condición de parada
-            delta = max(delta, abs(V_viejo[s] - V[s]))
+            delta = max(delta, abs(valor_anterior - V[s]))
 
         iteracion += 1
         ##print(f"Iteración {iteracion}: V = {np.round(V, 2)}")
 
         if delta < theta_p:
             print("¡El algoritmo ha convergido!")
-            politica_estados = {}
-            for s in range(16):
-                valores_acciones = []
-                for a in range(4):
-                    prob, siguiente, recompensa, terminado = lista_estados_p[s][a][0]
-                    valor_p = recompensa + gamma_p * V[siguiente]
-                    valores_acciones.append(valor_p)
-                max_valor = max(valores_acciones)
-                indice_mejor = valores_acciones.index(max_valor)
-                politica_estados[s] = indice_mejor
-            return V, politica_estados
+            break
+
+    politica_estados = {}
+    for s in range(num_estados):
+        valores_q = np.zeros(num_acciones)
+        for a in range(num_acciones):
+            for prob, siguiente, recompensa, terminado in modelo[s][a]:
+                valores_q[a] += prob * (recompensa + gamma_p * V[siguiente])
+
+        politica_estados[s] = np.argmax(valores_q)
+    return V, politica_estados
 
 
-import gymnasium as gym
+def impresion_matriz_v_y_politica(nombre, matriz, policy):
+    print(f"Matriz {nombre} de Valores:")
+    print(np.round(matriz.reshape(4, 4), 4))
+    print("\nPolítica Óptima:")
+    for i in policy:
+        print(i, "= ", policy.get(i))
+
 
 env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=False)
 observation, info = env.reset()
@@ -57,12 +62,10 @@ total_reward = 0
 gamma = 0.99
 theta = 1e-8
 lista_estados = env.unwrapped.P
-res, json_politica = value_iteration(lista_estados, gamma, theta)
-print("Matrizzzz")
-print(np.round(res.reshape(4, 4), 4))
-print("\nPolítica Óptima")
-for i in json_politica:
-    print(i, "= ", json_politica.get(i))
+res, json_politica = value_iteration(env, gamma, theta)
+tipo_matriz = "Determinista"
+impresion_matriz_v_y_politica(tipo_matriz, res, json_politica)
+
 
 estado_actual = observation
 while not episode_over:
@@ -74,6 +77,33 @@ while not episode_over:
 
     episode_over = terminated or truncated
 
-print(f"\nEpisode finished! Total reward: {total_reward}")
+print(f"\Ejecución finalizada! Recompensa total: {total_reward}")
 
 env.close()
+
+
+env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True)
+observation, info = env.reset()
+
+episode_over = False
+total_reward = 0
+gamma = 0.99
+theta = 1e-8
+
+matriz_costos_v, json_politica = value_iteration(env, gamma, theta)
+tipo_matriz = "Estocástico"
+impresion_matriz_v_y_politica(tipo_matriz, matriz_costos_v, json_politica)
+
+
+estado_actual = observation
+while not episode_over:
+    # 0: Move left 1: Move down 2: Move right 3: Move top
+
+    action = json_politica.get(estado_actual)
+    estado_actual, reward, terminated, truncated, info = env.step(action)
+
+    total_reward += reward
+
+    episode_over = terminated or truncated
+
+print(f"\nEpisode finished! Total reward: {total_reward}")
