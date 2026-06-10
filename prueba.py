@@ -9,8 +9,6 @@ def value_iteration(entorno, gamma_p, theta_p):
     num_estados = entorno.observation_space.n
     num_acciones = entorno.action_space.n
     V = np.zeros(num_estados)
-    # estados_terminales = {5, 7, 11, 12, 15}
-    #
     while True:
         delta = 0.0
 
@@ -48,13 +46,13 @@ def value_iteration(entorno, gamma_p, theta_p):
 
 def impresion_matriz_v_y_politica(nombre, matriz, policy):
     print(f"Matriz {nombre} de Valores:")
-    print(np.round(matriz.reshape(4, 4), 4))
+    print(np.round(matriz.reshape(8, 8), 4))
     print("\nPolítica Óptima:")
     for i in policy:
         print(i, "= ", policy.get(i))
 
 
-env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=False)
+env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=False, map_name="8x8")
 observation, info = env.reset()
 
 episode_over = False
@@ -77,12 +75,12 @@ while not episode_over:
 
     episode_over = terminated or truncated
 
-print(f"\Ejecución finalizada! Recompensa total: {total_reward}")
+print(f"\nEjecución finalizada! Recompensa total: {total_reward}")
 
 env.close()
 
 
-env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True)
+env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True, map_name="8x8")
 observation, info = env.reset()
 
 episode_over = False

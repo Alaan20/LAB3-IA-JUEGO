@@ -50,7 +50,7 @@ def value_iteration(lista_estados_p, gamma_p, theta_p):
             return V, politica_estados
 
 
-env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True)
+env = gym.make("FrozenLake-v1", render_mode="human", is_slippery=True, map_name="8x8")
 observation, info = env.reset()
 
 episode_over = False
